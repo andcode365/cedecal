@@ -9,14 +9,23 @@ import (
 	"strings"
 	"time"
 	"unicode/utf8"
+	"os"
 )
 
 var addr = flag.String("addr", ":8080", "http service address")
 
+var logger *log.Logger
+
 func main() {
+	logFile, err := os.OpenFile("/home/ec2-user/log/cedecal.log", os.O_RDWR | os.O_APPEND | os.O_CREATE, 0600)
+	if err != nil {
+		log.Fatal(err)
+	}
+	logger =log.New(logFile, "cedecal:", log.LstdFlags|log.Llongfile)
+
 	flag.Parse()
 	http.Handle("/cedec2014.ics", http.HandlerFunc(responser))
-	err := http.ListenAndServe(*addr, nil)
+	err = http.ListenAndServe(*addr, nil)
 	if err != nil {
 		log.Print("ListenAndServe:", err)
 	}
@@ -62,6 +71,8 @@ func responser(w http.ResponseWriter, r *http.Request) {
 	var buf bytes.Buffer
 	convert(&rt, &buf)
 	w.Write(buf.Bytes())
+
+	logger.Println(r.RemoteAddr)
 }
 
 func arrange(desc string) (string, error) {
